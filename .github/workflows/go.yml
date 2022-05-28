@@ -18,8 +18,11 @@ jobs:
       with:
         go-version: 1.18
 
-    - name: Build
-      run: go build -v ./...
-
     - name: Test
+      env:
+        NAIVEFS_TEST_MINIO_ENDPOINT: ${{ secrets.NAIVEFS_TEST_MINIO_ENDPOINT }}
+        NAIVEFS_TEST_MINIO_ACCESS_KEY_ID: ${{ secrets.NAIVEFS_TEST_MINIO_ACCESS_KEY_ID }}
+        NAIVEFS_TEST_MINIO_SECRET_ACCESS_KEY: ${{ secrets.NAIVEFS_TEST_MINIO_SECRET_ACCESS_KEY }}
+        NAIVEFS_TEST_MINIO_BUCKET_NAME: ${{ secrets.NAIVEFS_TEST_MINIO_BUCKET_NAME }}
+        NAIVEFS_TEST_MINIO_BASE_DIR: ${{ secrets.NAIVEFS_TEST_MINIO_BASE_DIR }}
       run: go test -v ./...
