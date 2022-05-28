@@ -1,4 +1,7 @@
 # go-naive-fs
+
+[![Go](https://github.com/iloahz/go-naive-fs/actions/workflows/go.yml/badge.svg)](https://github.com/iloahz/go-naive-fs/actions/workflows/go.yml)
+
 go-naive-fs aims to provide basic fs operations with ease.
 
 # Operations
@@ -17,7 +20,7 @@ go-naive-fs aims to provide basic fs operations with ease.
 
 * Local
 * Samba
-* S3
+* Minio
 
 # Similar Projects
 * https://github.com/spf13/afero

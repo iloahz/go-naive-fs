@@ -23,6 +23,9 @@ func testFSTouch(t *testing.T, fs FS) {
 }
 
 func testFSMkDir(t *testing.T, fs FS) {
+	if !fs.SupportDir() {
+		return
+	}
 	name := "some_folder"
 	err := fs.MkDir(name)
 	if err != nil {
@@ -85,6 +88,20 @@ func testFSGeneral(t *testing.T, fs FS) {
 	fs.Remove(".")
 }
 
-func TestAllFS(t *testing.T) {
-	testFSGeneral(t, NewFSLocal(path.Join(os.TempDir(), "naivefs_test")))
+func TestFSLocal(t *testing.T) {
+	fs := NewFSLocal(path.Join(os.TempDir(), "naivefs_test"))
+	testFSGeneral(t, fs)
+}
+
+func TestFSMinio(t *testing.T) {
+	config := &MinioConfig{
+		Endpoint:        os.Getenv("NAIVEFS_TEST_MINIO_ENDPOINT"),
+		AccessKeyID:     os.Getenv("NAIVEFS_TEST_MINIO_ACCESS_KEY_ID"),
+		SecretAccessKey: os.Getenv("NAIVEFS_TEST_MINIO_SECRET_ACCESS_KEY"),
+		UseSSL:          true,
+		BucketName:      os.Getenv("NAIVEFS_TEST_MINIO_BUCKET_NAME"),
+		BaseDir:         os.Getenv("NAIVEFS_TEST_MINIO_BASE_DIR"),
+	}
+	fs := NewFSMinio(config)
+	testFSGeneral(t, fs)
 }

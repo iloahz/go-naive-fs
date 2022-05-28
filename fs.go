@@ -9,4 +9,5 @@ type FS interface {
 	Read(string) ([]byte, error)
 	Exists(string) bool
 	IsDir(string) bool
+	SupportDir() bool
 }

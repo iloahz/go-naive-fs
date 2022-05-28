@@ -84,3 +84,7 @@ func (local *FSLocal) IsDir(name string) bool {
 	}
 	return stat.IsDir()
 }
+
+func (local *FSLocal) SupportDir() bool {
+	return true
+}
