@@ -7,13 +7,11 @@ go-naive-fs aims to provide basic fs operations with ease.
 * MkDir
 * Remove
 * Write
-* Append
 * Copy
 * Move
 * Read
 * Exists
 * IsDir
-* IsFile
 
 # Backends
 
