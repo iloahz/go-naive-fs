@@ -44,7 +44,3 @@ func Exists(file File) bool {
 func IsDir(file File) bool {
 	return file.fs.IsDir(file.Path)
 }
-
-func IsFile(file File) bool {
-	return file.fs.IsFile(file.Path)
-}
