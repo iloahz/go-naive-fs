@@ -16,6 +16,10 @@ func NewFSLocal(baseDir string) *FSLocal {
 	}
 }
 
+func (local *FSLocal) Type() FSType {
+	return FSTypeLocal
+}
+
 func (local *FSLocal) toAbs(name string) string {
 	if path.IsAbs(name) {
 		return name
@@ -83,8 +87,4 @@ func (local *FSLocal) IsDir(name string) bool {
 		return false
 	}
 	return stat.IsDir()
-}
-
-func (local *FSLocal) SupportDir() bool {
-	return true
 }

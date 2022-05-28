@@ -23,7 +23,8 @@ func testFSTouch(t *testing.T, fs FS) {
 }
 
 func testFSMkDir(t *testing.T, fs FS) {
-	if !fs.SupportDir() {
+	if fs.Type() == FSTypeMinio {
+		// minio does not support empty folder
 		return
 	}
 	name := "some_folder"

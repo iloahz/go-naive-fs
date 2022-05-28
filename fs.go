@@ -1,6 +1,7 @@
 package naivefs
 
 type FS interface {
+	Type() FSType
 	File(string) *File
 	Touch(string) error
 	MkDir(string) error
@@ -9,5 +10,4 @@ type FS interface {
 	Read(string) ([]byte, error)
 	Exists(string) bool
 	IsDir(string) bool
-	SupportDir() bool
 }

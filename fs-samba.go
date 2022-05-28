@@ -1,7 +1,6 @@
 package naivefs
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -30,17 +29,8 @@ func NewFSSamba(config *SambaConfig) *FSSamba {
 	return samba
 }
 
-func ignoreError(f func() error) func() {
-	return func() {
-		f()
-	}
-}
-
-func cancelWhenDone(ctx context.Context, cancelFunc func()) {
-	go func() {
-		<-ctx.Done()
-		cancelFunc()
-	}()
+func (samba *FSSamba) Type() FSType {
+	return FSTypeSamba
 }
 
 func (samba *FSSamba) withFS(f func(fs *smb2.Share) error) error {
@@ -69,35 +59,6 @@ func (samba *FSSamba) withFS(f func(fs *smb2.Share) error) error {
 	}
 	defer fs.Umount()
 	return f(fs)
-}
-
-// TODO: perf opt, share conn
-func (samba *FSSamba) connect(ctx context.Context) (*smb2.Share, error) {
-	samba.lock.Lock()
-	cancelWhenDone(ctx, samba.lock.Unlock)
-	addr := fmt.Sprintf("%s:445", samba.config.ServerName)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	cancelWhenDone(ctx, ignoreError(conn.Close))
-	d := &smb2.Dialer{
-		Initiator: &smb2.NTLMInitiator{
-			User:     samba.config.Username,
-			Password: samba.config.Password,
-		},
-	}
-	s, err := d.Dial(conn)
-	if err != nil {
-		return nil, err
-	}
-	cancelWhenDone(ctx, ignoreError(s.Logoff))
-	fs, err := s.Mount(samba.config.ShareName)
-	if err != nil {
-		return nil, err
-	}
-	cancelWhenDone(ctx, ignoreError(fs.Umount))
-	return fs, nil
 }
 
 func (samba *FSSamba) File(name string) *File {
@@ -169,8 +130,4 @@ func (samba *FSSamba) IsDir(name string) (isDir bool) {
 		return nil
 	})
 	return
-}
-
-func (samba *FSSamba) SupportDir() bool {
-	return true
 }

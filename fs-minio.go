@@ -33,6 +33,10 @@ func NewFSMinio(config *MinioConfig) *FSMinio {
 	return fsMinio
 }
 
+func (minio *FSMinio) Type() FSType {
+	return FSTypeMinio
+}
+
 func (minio *FSMinio) withClient(f func(*minioSDK.Client) error) error {
 	minio.lock.Lock()
 	defer minio.lock.Unlock()
@@ -122,8 +126,4 @@ func (minio *FSMinio) IsDir(name string) (isDir bool) {
 		return nil
 	})
 	return
-}
-
-func (minio *FSMinio) SupportDir() bool {
-	return false
 }
