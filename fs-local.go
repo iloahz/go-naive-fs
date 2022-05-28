@@ -3,62 +3,82 @@ package naivefs
 import (
 	"errors"
 	"os"
+	"path"
 )
 
 type FSLocal struct {
+	baseDir string
 }
 
-func NewFSLocal() *FSLocal {
-	return &FSLocal{}
+func NewFSLocal(baseDir string) *FSLocal {
+	return &FSLocal{
+		baseDir: baseDir,
+	}
 }
 
-func (local *FSLocal) File(path string) *File {
+func (local *FSLocal) toAbs(name string) string {
+	if path.IsAbs(name) {
+		return name
+	}
+	return path.Join(local.baseDir, name)
+}
+
+func (local *FSLocal) File(name string) *File {
+	name = local.toAbs(name)
 	return &File{
 		fs:   local,
-		Path: path,
+		name: name,
 	}
 }
 
-func (local *FSLocal) Touch(path string) error {
-	if local.Exists(path) {
+func (local *FSLocal) Touch(name string) error {
+	name = local.toAbs(name)
+	if local.Exists(name) {
 		return nil
 	}
-	file, err := os.Create(path)
+	local.MkDir(path.Dir(name))
+	file, err := os.Create(name)
 	if err != nil {
 		return err
 	}
 	return file.Close()
 }
 
-func (local *FSLocal) MkDir(path string) error {
-	if local.Exists(path) {
+func (local *FSLocal) MkDir(name string) error {
+	name = local.toAbs(name)
+	if local.Exists(name) {
 		return nil
 	}
-	return os.MkdirAll(path, os.ModePerm)
+	return os.MkdirAll(name, os.ModePerm)
 }
 
-func (local *FSLocal) Remove(path string) error {
-	if !local.Exists(path) {
+func (local *FSLocal) Remove(name string) error {
+	name = local.toAbs(name)
+	if !local.Exists(name) {
 		return nil
 	}
-	return os.RemoveAll(path)
+	return os.RemoveAll(name)
 }
 
-func (local *FSLocal) Write(path string, data []byte) error {
-	return os.WriteFile(path, data, os.ModePerm)
+func (local *FSLocal) Write(name string, data []byte) error {
+	name = local.toAbs(name)
+	return os.WriteFile(name, data, os.ModePerm)
 }
 
-func (local *FSLocal) Read(path string) ([]byte, error) {
-	return os.ReadFile(path)
+func (local *FSLocal) Read(name string) ([]byte, error) {
+	name = local.toAbs(name)
+	return os.ReadFile(name)
 }
 
-func (local *FSLocal) Exists(path string) bool {
-	_, err := os.Stat(path)
+func (local *FSLocal) Exists(name string) bool {
+	name = local.toAbs(name)
+	_, err := os.Stat(name)
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func (local *FSLocal) IsDir(path string) bool {
-	stat, err := os.Stat(path)
+func (local *FSLocal) IsDir(name string) bool {
+	name = local.toAbs(name)
+	stat, err := os.Stat(name)
 	if err != nil {
 		return false
 	}

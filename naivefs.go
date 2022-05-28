@@ -1,19 +1,19 @@
 package naivefs
 
 func Touch(file File) error {
-	return file.fs.Touch(file.Path)
+	return file.fs.Touch(file.name)
 }
 
 func MkDir(file File) error {
-	return file.fs.MkDir(file.Path)
+	return file.fs.MkDir(file.name)
 }
 
 func Remove(file File) error {
-	return file.fs.Remove(file.Path)
+	return file.fs.Remove(file.name)
 }
 
 func Write(file File, buf []byte) error {
-	return file.fs.Write(file.Path, buf)
+	return file.fs.Write(file.name, buf)
 }
 
 // TODO: perf opt
@@ -34,13 +34,13 @@ func Move(src File, dst File) error {
 }
 
 func Read(file File) ([]byte, error) {
-	return file.fs.Read(file.Path)
+	return file.fs.Read(file.name)
 }
 
 func Exists(file File) bool {
-	return file.fs.Exists(file.Path)
+	return file.fs.Exists(file.name)
 }
 
 func IsDir(file File) bool {
-	return file.fs.IsDir(file.Path)
+	return file.fs.IsDir(file.name)
 }

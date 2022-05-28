@@ -72,15 +72,15 @@ func (samba *FSSamba) connect(ctx context.Context) (*smb2.Share, error) {
 	return fs, nil
 }
 
-func (samba *FSSamba) File(path string) *File {
+func (samba *FSSamba) File(name string) *File {
 	return &File{
 		fs:   samba,
-		Path: path,
+		name: name,
 	}
 }
 
-func (samba *FSSamba) Touch(path string) error {
-	if samba.Exists(path) {
+func (samba *FSSamba) Touch(name string) error {
+	if samba.Exists(name) {
 		return nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,15 +89,15 @@ func (samba *FSSamba) Touch(path string) error {
 	if err != nil {
 		return err
 	}
-	_, err = fs.Create(path)
+	_, err = fs.Create(name)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (samba *FSSamba) MkDir(path string) error {
-	if samba.Exists(path) {
+func (samba *FSSamba) MkDir(name string) error {
+	if samba.Exists(name) {
 		return nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -106,11 +106,11 @@ func (samba *FSSamba) MkDir(path string) error {
 	if err != nil {
 		return err
 	}
-	return fs.MkdirAll(path, os.ModePerm)
+	return fs.MkdirAll(name, os.ModePerm)
 }
 
-func (samba *FSSamba) Remove(path string) error {
-	if !samba.Exists(path) {
+func (samba *FSSamba) Remove(name string) error {
+	if !samba.Exists(name) {
 		return nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -119,48 +119,48 @@ func (samba *FSSamba) Remove(path string) error {
 	if err != nil {
 		return err
 	}
-	return fs.RemoveAll(path)
+	return fs.RemoveAll(name)
 }
 
-func (samba *FSSamba) Write(path string, data []byte) error {
+func (samba *FSSamba) Write(name string, data []byte) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	fs, err := samba.connect(ctx)
 	if err != nil {
 		return err
 	}
-	return fs.WriteFile(path, data, os.ModePerm)
+	return fs.WriteFile(name, data, os.ModePerm)
 }
 
-func (samba *FSSamba) Read(path string) ([]byte, error) {
+func (samba *FSSamba) Read(name string) ([]byte, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	fs, err := samba.connect(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return fs.ReadFile(path)
+	return fs.ReadFile(name)
 }
 
-func (samba *FSSamba) Exists(path string) bool {
+func (samba *FSSamba) Exists(name string) bool {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	fs, err := samba.connect(ctx)
 	if err != nil {
 		return false
 	}
-	_, err = fs.Stat(path)
+	_, err = fs.Stat(name)
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func (samba *FSSamba) IsDir(path string) bool {
+func (samba *FSSamba) IsDir(name string) bool {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	fs, err := samba.connect(ctx)
 	if err != nil {
 		return false
 	}
-	stat, err := fs.Stat(path)
+	stat, err := fs.Stat(name)
 	if err != nil {
 		return false
 	}
