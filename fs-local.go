@@ -2,6 +2,7 @@ package naivefs
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"path"
 )
@@ -37,7 +38,11 @@ func (local *FSLocal) File(name string) *File {
 
 func (local *FSLocal) Touch(name string) error {
 	name = local.toAbs(name)
-	if local.Exists(name) {
+	exists, err := local.Exists(name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 	local.MkDir(path.Dir(name))
@@ -50,7 +55,11 @@ func (local *FSLocal) Touch(name string) error {
 
 func (local *FSLocal) MkDir(name string) error {
 	name = local.toAbs(name)
-	if local.Exists(name) {
+	exists, err := local.Exists(name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 	return os.MkdirAll(name, os.ModePerm)
@@ -58,7 +67,11 @@ func (local *FSLocal) MkDir(name string) error {
 
 func (local *FSLocal) Remove(name string) error {
 	name = local.toAbs(name)
-	if !local.Exists(name) {
+	exists, err := local.Exists(name)
+	if err != nil {
+		return err
+	}
+	if !exists {
 		return nil
 	}
 	return os.RemoveAll(name)
@@ -74,17 +87,44 @@ func (local *FSLocal) Read(name string) ([]byte, error) {
 	return os.ReadFile(name)
 }
 
-func (local *FSLocal) Exists(name string) bool {
+func (local *FSLocal) Exists(name string) (bool, error) {
 	name = local.toAbs(name)
 	_, err := os.Stat(name)
-	return !errors.Is(err, os.ErrNotExist)
+	if err == nil {
+		return true, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else {
+		return false, err
+	}
 }
 
-func (local *FSLocal) IsDir(name string) bool {
+func (local *FSLocal) IsDir(name string) (bool, error) {
 	name = local.toAbs(name)
 	stat, err := os.Stat(name)
-	if err != nil {
-		return false
+	if err == nil {
+		return stat.IsDir(), nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else {
+		return false, err
 	}
-	return stat.IsDir()
+}
+
+func (local *FSLocal) ReadDir(name string) ([]FileInfo, error) {
+	name = local.toAbs(name)
+	osFileInfos, err := ioutil.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	var res []FileInfo
+	for _, osFileInfo := range osFileInfos {
+		fileInfo := FileInfo{
+			Name:  osFileInfo.Name(),
+			Size:  osFileInfo.Size(),
+			IsDir: osFileInfo.IsDir(),
+		}
+		res = append(res, fileInfo)
+	}
+	return res, nil
 }

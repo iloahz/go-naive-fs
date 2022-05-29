@@ -103,9 +103,9 @@ func (minio *FSMinio) Read(name string) (data []byte, err error) {
 	return
 }
 
-func (minio *FSMinio) Exists(name string) (exists bool) {
+func (minio *FSMinio) fileExists(name string) (exists bool, err error) {
 	minio.withClient(func(client *minioSDK.Client) error {
-		_, err := client.StatObject(context.Background(), minio.config.BucketName, name, minioSDK.StatObjectOptions{})
+		_, err = client.StatObject(context.Background(), minio.config.BucketName, name, minioSDK.StatObjectOptions{})
 		if err != nil {
 			exists = false
 			return err
@@ -116,12 +116,59 @@ func (minio *FSMinio) Exists(name string) (exists bool) {
 	return
 }
 
-func (minio *FSMinio) IsDir(name string) (isDir bool) {
+func (minio *FSMinio) dirExists(name string) (exists bool, err error) {
+	minio.withClient(func(client *minioSDK.Client) error {
+		objectCh := client.ListObjects(context.Background(), minio.config.BucketName, minioSDK.ListObjectsOptions{
+			Prefix:    name,
+			Recursive: false,
+		})
+		exists = false
+		for range objectCh {
+			exists = true
+			break
+		}
+		return nil
+	})
+	return
+}
+
+func (minio *FSMinio) Exists(name string) (exists bool, err error) {
+	exists, err = minio.fileExists(name)
+	if exists {
+		return
+	}
+	return minio.dirExists(name)
+}
+
+func (minio *FSMinio) IsDir(name string) (isDir bool, err error) {
 	minio.withClient(func(client *minioSDK.Client) error {
 		_, err := client.StatObject(context.Background(), minio.config.BucketName, name, minioSDK.StatObjectOptions{})
 		if err != nil {
 			isDir = false
 			return err
+		}
+		return nil
+	})
+	return
+}
+
+func (minio *FSMinio) ReadDir(name string) (fileInfos []FileInfo, err error) {
+	minio.withClient(func(client *minioSDK.Client) error {
+		objectCh := client.ListObjects(context.Background(), minio.config.BucketName, minioSDK.ListObjectsOptions{
+			Prefix:    name,
+			Recursive: false,
+		})
+		for object := range objectCh {
+			if object.Err != nil {
+				err = object.Err
+				return err
+			}
+			fileInfo := FileInfo{
+				Name:  object.Key,
+				Size:  object.Size,
+				IsDir: false,
+			}
+			fileInfos = append(fileInfos, fileInfo)
 		}
 		return nil
 	})

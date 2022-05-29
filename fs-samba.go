@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/hirochachacha/go-smb2"
@@ -20,6 +21,7 @@ type SambaConfig struct {
 	Username   string
 	Password   string
 	ShareName  string
+	BaseDir    string
 }
 
 func NewFSSamba(config *SambaConfig) *FSSamba {
@@ -31,6 +33,13 @@ func NewFSSamba(config *SambaConfig) *FSSamba {
 
 func (samba *FSSamba) Type() FSType {
 	return FSTypeSamba
+}
+
+func (samba *FSSamba) toAbs(name string) string {
+	if path.IsAbs(name) {
+		return name
+	}
+	return path.Join(samba.config.BaseDir, name)
 }
 
 func (samba *FSSamba) withFS(f func(fs *smb2.Share) error) error {
@@ -69,7 +78,11 @@ func (samba *FSSamba) File(name string) *File {
 }
 
 func (samba *FSSamba) Touch(name string) error {
-	if samba.Exists(name) {
+	exists, err := samba.Exists(name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 	return samba.withFS(func(fs *smb2.Share) error {
@@ -79,7 +92,11 @@ func (samba *FSSamba) Touch(name string) error {
 }
 
 func (samba *FSSamba) MkDir(name string) error {
-	if samba.Exists(name) {
+	exists, err := samba.Exists(name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 	return samba.withFS(func(fs *smb2.Share) error {
@@ -88,7 +105,11 @@ func (samba *FSSamba) MkDir(name string) error {
 }
 
 func (samba *FSSamba) Remove(name string) error {
-	if !samba.Exists(name) {
+	exists, err := samba.Exists(name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 	return samba.withFS(func(fs *smb2.Share) error {
@@ -110,22 +131,53 @@ func (samba *FSSamba) Read(name string) (data []byte, err error) {
 	return
 }
 
-func (samba *FSSamba) Exists(name string) (exists bool) {
+func (samba *FSSamba) Exists(name string) (exists bool, err error) {
 	samba.withFS(func(fs *smb2.Share) error {
-		_, err := fs.Stat(name)
-		exists = !errors.Is(err, os.ErrNotExist)
+		_, err = fs.Stat(name)
+		if err == nil {
+			exists = true
+		} else if errors.Is(err, os.ErrNotExist) {
+			exists = false
+			err = nil
+		} else {
+			exists = false
+		}
 		return nil
 	})
 	return
 }
 
-func (samba *FSSamba) IsDir(name string) (isDir bool) {
+func (samba *FSSamba) IsDir(name string) (isDir bool, err error) {
 	samba.withFS(func(fs *smb2.Share) error {
 		stat, err := fs.Stat(name)
-		if err != nil {
-			isDir = false
-		} else {
+		if err == nil {
 			isDir = stat.IsDir()
+		} else if errors.Is(err, os.ErrNotExist) {
+			isDir = false
+			err = nil
+		} else {
+			isDir = false
+		}
+		return nil
+	})
+	return
+}
+
+func (samba *FSSamba) ReadDir(name string) (fileInfos []FileInfo, err error) {
+	samba.withFS(func(fs *smb2.Share) error {
+		name = samba.toAbs(name)
+		var osFileInfos []os.FileInfo
+		osFileInfos, err = fs.ReadDir(name)
+		if err != nil {
+			return err
+		}
+		for _, osFileInfo := range osFileInfos {
+			fileInfo := FileInfo{
+				Name:  osFileInfo.Name(),
+				Size:  osFileInfo.Size(),
+				IsDir: osFileInfo.IsDir(),
+			}
+			fileInfos = append(fileInfos, fileInfo)
 		}
 		return nil
 	})

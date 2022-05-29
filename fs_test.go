@@ -1,12 +1,34 @@
 package naivefs
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path"
 	"reflect"
 	"testing"
+
+	"github.com/iloahz/go-naive-fs/utils"
 )
+
+func existAndNoError(t *testing.T, fs FS, name string) {
+	exists, err := fs.Exists(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatal(fmt.Sprintf("expect %s to exist", name))
+	}
+}
+
+func notExistAndNoError(t *testing.T, fs FS, name string) {
+	exists, err := fs.Exists(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists {
+		t.Fatal(fmt.Sprintf("expect %s to not exist", name))
+	}
+}
 
 func testFSTouch(t *testing.T, fs FS) {
 	name := "some_file.txt"
@@ -14,28 +36,24 @@ func testFSTouch(t *testing.T, fs FS) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !fs.Exists(name) {
-		t.Fatal("expected file to exist")
-	}
-	if fs.IsDir(name) {
+	existAndNoError(t, fs, name)
+	if isDir, _ := fs.IsDir(name); isDir {
 		t.Fatal("expected to be file, but is dir")
 	}
 }
 
 func testFSMkDir(t *testing.T, fs FS) {
 	if fs.Type() == FSTypeMinio {
-		// minio does not support empty folder
+		// minio does not support empty dir
 		return
 	}
-	name := "some_folder"
+	name := "some_dir"
 	err := fs.MkDir(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !fs.Exists(name) {
-		t.Fatal("expected file to exist")
-	}
-	if !fs.IsDir(name) {
+	existAndNoError(t, fs, name)
+	if isDir, _ := fs.IsDir(name); !isDir {
 		t.Fatal("expected to be dir, but not")
 	}
 }
@@ -43,7 +61,7 @@ func testFSMkDir(t *testing.T, fs FS) {
 func testFSRemove(t *testing.T, fs FS) {
 	files := []string{
 		"some_file.txt",
-		"some_folder/some_file.txt",
+		"some_dir/some_file.txt",
 	}
 	for _, file := range files {
 		err := fs.Touch(file)
@@ -52,16 +70,12 @@ func testFSRemove(t *testing.T, fs FS) {
 		}
 	}
 	for _, file := range files {
-		if !fs.Exists(file) {
-			t.Fatal(errors.New("touch is not working"))
-		}
+		existAndNoError(t, fs, file)
 		err := fs.Remove(file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if fs.Exists(file) {
-			t.Fatal("expect file to be removed, but still exists")
-		}
+		notExistAndNoError(t, fs, file)
 	}
 }
 
@@ -81,11 +95,20 @@ func testFSWrite(t *testing.T, fs FS) {
 	}
 }
 
+func testFSExists(t *testing.T, fs FS) {
+	name := "some_dir/some_file.txt"
+	data := []byte{1, 2, 3, 5, 8}
+	utils.Must(fs.Write(name, data))
+	existAndNoError(t, fs, "some_dir")
+	existAndNoError(t, fs, "some_dir/some_file.txt")
+}
+
 func testFSGeneral(t *testing.T, fs FS) {
 	testFSTouch(t, fs)
 	testFSMkDir(t, fs)
 	testFSRemove(t, fs)
 	testFSWrite(t, fs)
+	testFSExists(t, fs)
 	fs.Remove(".")
 }
 

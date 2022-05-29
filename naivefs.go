@@ -37,10 +37,10 @@ func Read(file File) ([]byte, error) {
 	return file.fs.Read(file.name)
 }
 
-func Exists(file File) bool {
+func Exists(file File) (bool, error) {
 	return file.fs.Exists(file.name)
 }
 
-func IsDir(file File) bool {
+func IsDir(file File) (bool, error) {
 	return file.fs.IsDir(file.name)
 }

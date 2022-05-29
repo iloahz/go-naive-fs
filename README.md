@@ -1,6 +1,7 @@
 # go-naive-fs
 
 [![Go](https://github.com/iloahz/go-naive-fs/actions/workflows/go.yml/badge.svg)](https://github.com/iloahz/go-naive-fs/actions/workflows/go.yml)
+[![CodeQL](https://github.com/iloahz/go-naive-fs/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/iloahz/go-naive-fs/actions/workflows/codeql-analysis.yml)
 
 go-naive-fs aims to provide basic fs operations with ease.
 
@@ -15,6 +16,7 @@ go-naive-fs aims to provide basic fs operations with ease.
 * Read
 * Exists
 * IsDir
+* ReadDir
 
 # Backends
 

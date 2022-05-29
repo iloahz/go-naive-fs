@@ -8,6 +8,7 @@ type FS interface {
 	Remove(string) error
 	Write(string, []byte) error
 	Read(string) ([]byte, error)
-	Exists(string) bool
-	IsDir(string) bool
+	Exists(string) (bool, error)
+	IsDir(string) (bool, error)
+	ReadDir(string) ([]FileInfo, error)
 }
